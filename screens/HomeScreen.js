@@ -1,5 +1,5 @@
 import { SafeAreaView, View, Image, Text, TextInput, ScrollView,  } from "react-native";
-import React, { useLayoutEffect } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import {
   UserIcon,
@@ -10,15 +10,31 @@ import {
 import GlobalStyles from "../GlobalStyles";
 import Categories from "../components/Categories";
 import FeaturedRow from "../components/FeaturedRow";
+import client from "../sanity";
+import category from "../sanity/schemas/category";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const [ featuredCategories, setFeatredCategories ] = useState([])
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
     })
   }, []);
+
+  useEffect(() => {
+    client.fetch(`
+    *[_type == "featured"] {
+      ...,
+      restaurants[]->{
+        ...,
+        dishes[]->
+      }
+    }`).then((data) => {
+      setFeatredCategories(data);
+    });
+  }, [])
   return (
     <SafeAreaView style={GlobalStyles.droidSafeArea} className="bg-white pt-5" >
        {/* header */}
@@ -61,25 +77,15 @@ const HomeScreen = () => {
         <Categories />
 
         {/* featured */}
-        <FeaturedRow 
-          title="Featured"
-          description="Paid placements from our partners"
-          featuredCategory="featured"
-        />
 
-        {/* Tasty Discounts */}
-        <FeaturedRow 
-          title="Featured"
-          description="Paid placements from our partners"
-          featuredCategory="featured"
-        />
-
-        {/* offers near you */}
-        <FeaturedRow 
-          title="Featured"
-          description="Paid placements from our partners"
-          featuredCategory="featured"
-        />
+        {featuredCategories?.map(category => (
+          <FeaturedRow 
+            key={category._id}
+            id={category._id}
+            title={category.name}
+            description={category.short_description}
+          />
+        ))}
        </ScrollView>
 
     </SafeAreaView>
